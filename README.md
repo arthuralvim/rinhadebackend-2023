@@ -12,6 +12,10 @@ docker-compose up -d --build
 docker-compose run --service-ports --rm api1 bash
 docker-compose run -e TESTING=True --rm api1 pytest
 
+## Check CPU/Memory Stats
+
+docker stats
+
 ## Run Server
 
 ```sh

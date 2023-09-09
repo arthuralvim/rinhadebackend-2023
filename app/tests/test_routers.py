@@ -67,6 +67,16 @@ class TestEndpoints:
         assert response.status_code == 200
         assert response.json() == {"hello": "welcome home"}
 
+    def test_ready_when_not_ready(self):
+        response = client.get("/ready")
+        assert response.status_code == 200
+        assert response.json() == {"ready": False}
+
+    def test_ready_when_ready(self, db_session):
+        response = client.get("/ready")
+        assert response.status_code == 200
+        assert response.json() == {"ready": True}
+
     def test_should_create_pessoas(self, db_session, pessoa_1, pessoa_2):
         response = client.post("/pessoas/", json=pessoa_1)
         assert response.status_code == 201

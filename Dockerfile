@@ -21,8 +21,9 @@ COPY ./poetry.lock ./pyproject.toml /src/
 RUN poetry config virtualenvs.create false
 RUN poetry install --no-interaction --no-root
 
-COPY docker-entrypoint.sh run.sh pytest.ini /src/
+COPY docker-entrypoint.sh initdb.py prestart.sh run.sh pytest.ini /src/
 COPY app /src/app/
+
 EXPOSE 80
 
 ENTRYPOINT ["/usr/bin/tini", "--", "./docker-entrypoint.sh"]

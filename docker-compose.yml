@@ -29,11 +29,15 @@ services:
           memory: '0.5GB'
     env_file:
       - default.env
+    environment:
+      RUN_INITIAL_DATA: 'False'
     volumes:
       - ./app/:/src/app/
 
   api2:
     <<: *api
+    environment:
+      RUN_INITIAL_DATA: 'True'
 
   nginx:
     image: nginx:latest
@@ -63,19 +67,46 @@ services:
     env_file:
       - default.env
     volumes:
-      - ./sql/init-testing-db.sh:/docker-entrypoint-initdb.d/init-testing-db.sh
-      - ./sql/improve_max_connections.sql:/docker-entrypoint-initdb.d/improve_max_connections.sql
+      - ./db/init-testing-db.sh:/docker-entrypoint-initdb.d/init-testing-db.sh
+      - ./db/improve_max_connections.sql:/docker-entrypoint-initdb.d/improve_max_connections.sql
+
+  cache:
+    image: redis:7.2
+    ports:
+      - '6379:6379'
+    deploy:
+      resources:
+        limits:
+          cpus: '0.1'
+          memory: '0.5GB'
+
+  # gatling
+
+  gatling:
+    image: gatling
+    build:
+      context: ./gatling
+      dockerfile: Dockerfile
+    container_name: gatling
+    volumes:
+      - ./gatling/data:/test-runner/data
+      - ./gatling/user-files:/test-runner/user-files
+    depends_on:
+      - api1
+      - api2
+      - db
+      - cache
+      - nginx
 
   # observability
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.45.0
+    image: gcr.io/cadvisor/cadvisor:v0.47.1
     container_name: cadvisor
     privileged: true
     devices:
       - /dev/kmsg:/dev/kmsg
     volumes:
-      - /var/run:/var/run:ro
       - /sys:/sys:ro
       - /var/lib/docker/:/var/lib/docker:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -92,7 +123,7 @@ services:
       org.label-schema.group: 'monitoring'
 
   prometheus:
-    image: prom/prometheus:v2.0.0
+    image: prom/prometheus:v2.47.0
     container_name: prometheus
     volumes:
       - prometheus-data:/prometheus
@@ -111,7 +142,7 @@ services:
       - monitoring
 
   grafana:
-    image: grafana/grafana:8.3.3
+    image: grafana/grafana:9.1.7
     container_name: grafana
     volumes:
       - grafana-data:/var/lib/grafana:rw
