@@ -3,7 +3,10 @@
     "list": [
       {
         "builtIn": 1,
-        "datasource": "-- Grafana --",
+        "datasource": {
+          "type": "datasource",
+          "uid": "grafana"
+        },
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)",
@@ -23,8 +26,7 @@
   "fiscalYearStartMonth": 0,
   "gnetId": 893,
   "graphTooltip": 1,
-  "id": 7,
-  "iteration": 1694222951939,
+  "id": 1,
   "links": [],
   "liveNow": false,
   "panels": [
@@ -87,9 +89,13 @@
         },
         "textMode": "auto"
       },
-      "pluginVersion": "8.3.3",
+      "pluginVersion": "9.1.7",
       "targets": [
         {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "jVBNjukSz"
+          },
           "expr": "count(rate(container_last_seen{name=~\".+\"}[$interval]))",
           "intervalFactor": 2,
           "refId": "A",
@@ -106,6 +112,10 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "jVBNjukSz"
+      },
       "editable": true,
       "error": false,
       "fill": 1,
@@ -136,7 +146,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.3.3",
+      "pluginVersion": "9.1.7",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -195,6 +205,10 @@
       }
     },
     {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "jVBNjukSz"
+      },
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -254,18 +268,20 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": true
       },
-      "pluginVersion": "8.3.3",
+      "pluginVersion": "9.1.7",
       "targets": [
         {
           "datasource": {
             "type": "prometheus",
             "uid": "jVBNjukSz"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "(sum(container_memory_rss)/sum(container_spec_memory_limit_bytes)) * 100",
+          "expr": "(sum(container_memory_usage_bytes)/sum(container_spec_memory_limit_bytes)) * 100",
           "interval": "",
           "intervalFactor": 2,
           "legendFormat": "",
+          "range": true,
           "refId": "A",
           "step": 1800
         }
@@ -281,6 +297,10 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "jVBNjukSz"
+      },
       "editable": true,
       "error": false,
       "fill": 1,
@@ -311,7 +331,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.3.3",
+      "pluginVersion": "9.1.7",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -325,12 +345,14 @@
             "type": "prometheus",
             "uid": "jVBNjukSz"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(container_spec_memory_limit_bytes) - sum(container_memory_rss)",
+          "expr": "sum(container_spec_memory_limit_bytes) - sum(container_memory_usage_bytes)",
           "hide": false,
           "interval": "",
           "intervalFactor": 2,
           "legendFormat": "Unavailable Memory",
+          "range": true,
           "refId": "G",
           "step": 600
         }
@@ -356,7 +378,7 @@
           "format": "bytes",
           "label": "",
           "logBase": 1,
-          "max": "8000000000",
+          "max": "12000000000",
           "min": 0,
           "show": true
         },
@@ -379,6 +401,10 @@
           "value": "current"
         }
       ],
+      "datasource": {
+        "type": "prometheus",
+        "uid": "jVBNjukSz"
+      },
       "editable": true,
       "error": false,
       "fontSize": "100%",
@@ -523,6 +549,7 @@
             "type": "prometheus",
             "uid": "jVBNjukSz"
           },
+          "editorMode": "code",
           "exemplar": false,
           "expr": "sum(container_spec_memory_limit_bytes{name=~\"$container\"}) by (name)",
           "format": "table",
@@ -554,8 +581,9 @@
             "type": "prometheus",
             "uid": "jVBNjukSz"
           },
+          "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(container_memory_rss{name=~\"$container\"}) by (name)",
+          "expr": "sum(container_memory_usage_bytes{name=~\"$container\"}) by (name)",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -568,8 +596,9 @@
             "type": "prometheus",
             "uid": "jVBNjukSz"
           },
+          "editorMode": "code",
           "exemplar": false,
-          "expr": "(sum(container_memory_rss{name=~\"$container\"}) by (name) / sum(container_spec_memory_limit_bytes{name=~\"$container\"}) by (name)) * 100",
+          "expr": "(sum(container_memory_usage_bytes{name=~\"$container\"}) by (name) / sum(container_spec_memory_limit_bytes{name=~\"$container\"}) by (name)) * 100",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -582,8 +611,9 @@
             "type": "prometheus",
             "uid": "jVBNjukSz"
           },
+          "editorMode": "code",
           "exemplar": false,
-          "expr": "sum(container_cpu_usage_seconds_total{name=~\"$container\"}) by (name) / 100000",
+          "expr": "sum(rate(container_cpu_usage_seconds_total{name=~\"$container\"}[$interval])) by (name)",
           "format": "table",
           "hide": false,
           "instant": true,
@@ -597,6 +627,7 @@
             "type": "prometheus",
             "uid": "jVBNjukSz"
           },
+          "editorMode": "code",
           "exemplar": false,
           "expr": "(sum(rate(container_cpu_usage_seconds_total{name=~\"$container\"}[$interval])) by (name) /\nsum(container_spec_cpu_quota{name=~\"$container\"} / container_spec_cpu_period{name=~\"$container\"}) by (name)) * 100",
           "format": "table",
@@ -640,6 +671,10 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "jVBNjukSz"
+      },
       "editable": true,
       "error": false,
       "fill": 5,
@@ -672,7 +707,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.3.3",
+      "pluginVersion": "9.1.7",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -686,6 +721,7 @@
             "type": "prometheus",
             "uid": "jVBNjukSz"
           },
+          "editorMode": "code",
           "exemplar": true,
           "expr": "sum(rate(container_cpu_usage_seconds_total{name=~\"$container\"}[$interval])) by (name) * 100",
           "hide": false,
@@ -693,6 +729,7 @@
           "intervalFactor": 2,
           "legendFormat": "{{name}}",
           "metric": "",
+          "range": true,
           "refId": "F",
           "step": 240
         }
@@ -738,6 +775,10 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "jVBNjukSz"
+      },
       "editable": true,
       "error": false,
       "fill": 3,
@@ -770,7 +811,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.3.3",
+      "pluginVersion": "9.1.7",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -784,12 +825,14 @@
             "type": "prometheus",
             "uid": "jVBNjukSz"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "sum(container_memory_rss{name=~\"$container\"}) by (name)",
+          "expr": "sum(container_memory_usage_bytes{name=~\"$container\"}) by (name)",
           "hide": false,
           "interval": "",
           "intervalFactor": 2,
           "legendFormat": "{{name}}",
+          "range": true,
           "refId": "A",
           "step": 240
         }
@@ -815,7 +858,6 @@
           "format": "bytes",
           "label": "",
           "logBase": 1,
-          "max": "1500000000",
           "show": true
         },
         {
@@ -834,6 +876,10 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "jVBNjukSz"
+      },
       "editable": true,
       "error": false,
       "fill": 5,
@@ -866,7 +912,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.3.3",
+      "pluginVersion": "9.1.7",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -880,8 +926,9 @@
             "type": "prometheus",
             "uid": "jVBNjukSz"
           },
+          "editorMode": "code",
           "exemplar": true,
-          "expr": "(sum(container_memory_rss{name=~\"$container\"}) by (name) / sum(container_spec_memory_limit_bytes{name=~\"$container\"}) by (name)) * 100",
+          "expr": "(sum(container_memory_usage_bytes{name=~\"$container\"}) by (name) / sum(container_spec_memory_limit_bytes{name=~\"$container\"}) by (name)) * 100",
           "format": "time_series",
           "hide": false,
           "instant": false,
@@ -934,6 +981,10 @@
       "bars": false,
       "dashLength": 10,
       "dashes": false,
+      "datasource": {
+        "type": "prometheus",
+        "uid": "jVBNjukSz"
+      },
       "editable": true,
       "error": false,
       "fill": 3,
@@ -966,7 +1017,7 @@
         "alertThreshold": true
       },
       "percentage": false,
-      "pluginVersion": "8.3.3",
+      "pluginVersion": "9.1.7",
       "pointradius": 5,
       "points": false,
       "renderer": "flot",
@@ -1026,7 +1077,7 @@
     }
   ],
   "refresh": "",
-  "schemaVersion": 34,
+  "schemaVersion": 37,
   "style": "dark",
   "tags": [],
   "templating": {
@@ -1139,14 +1190,20 @@
             "rinhadebackend-2023-api1-1",
             "rinhadebackend-2023-api2-1",
             "rinhadebackend-2023-db-1",
-            "rinhadebackend-2023-nginx-1"
+            "rinhadebackend-2023-nginx-1",
+            "rinhadebackend-2023-cache-1"
           ],
           "value": [
             "rinhadebackend-2023-api1-1",
             "rinhadebackend-2023-api2-1",
             "rinhadebackend-2023-db-1",
-            "rinhadebackend-2023-nginx-1"
+            "rinhadebackend-2023-nginx-1",
+            "rinhadebackend-2023-cache-1"
           ]
+        },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "jVBNjukSz"
         },
         "definition": "label_values(name)",
         "hide": 0,
@@ -1168,7 +1225,7 @@
     ]
   },
   "time": {
-    "from": "now-24h",
+    "from": "now-15m",
     "to": "now"
   },
   "timepicker": {
@@ -1189,6 +1246,6 @@
   "timezone": "browser",
   "title": "Rinha de Backend",
   "uid": "SwBqzrzSz",
-  "version": 13,
+  "version": 2,
   "weekStart": ""
 }
