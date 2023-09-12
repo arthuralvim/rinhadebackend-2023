@@ -1,5 +1,5 @@
 import pytest
-from schemas import PessoaSchema
+from app.schemas import PessoaSchema
 from pydantic import ValidationError
 
 

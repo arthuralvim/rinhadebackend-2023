@@ -1,10 +1,8 @@
 import pytest
 
-from fastapi.testclient import TestClient
-from app.main import app
-from schemas import PessoaSchema
+from app.schemas import PessoaSchema
 
-client = TestClient(app)
+pytestmark = pytest.mark.anyio
 
 
 class TestEndpoints:
@@ -62,60 +60,51 @@ class TestEndpoints:
             "stack": [1, "PHP"],  # stack deve ser um array de apenas strings
         }
 
-    def test_home_endpoint(self):
-        response = client.get("/")
-        assert response.status_code == 200
-        assert response.json() == {"hello": "welcome home"}
-
-    def test_ready_when_not_ready(self):
-        response = client.get("/ready")
-        assert response.status_code == 200
-        assert response.json() == {"ready": False}
-
-    def test_ready_when_ready(self, db_session):
-        response = client.get("/ready")
-        assert response.status_code == 200
-        assert response.json() == {"ready": True}
-
-    def test_should_create_pessoas(self, db_session, pessoa_1, pessoa_2):
-        response = client.post("/pessoas/", json=pessoa_1)
-        assert response.status_code == 201
-        response = client.post("/pessoas/", json=pessoa_2)
-        assert response.status_code == 201
-
-    def test_should_return_422_when_fail_creating_pessoas(
-        self, db_session, pessoa_1, pessoa_3, pessoa_4
+    async def test_should_create_pessoas(
+        self, client, db_session, redis, pessoa_1, pessoa_2
     ):
-        response = client.post("/pessoas/", json=pessoa_1)
+        response = await client.post("/pessoas", json=pessoa_1)
         assert response.status_code == 201
-        response = client.post("/pessoas/", json=pessoa_1)
-        assert response.status_code == 422
+        response = await client.post("/pessoas", json=pessoa_2)
+        assert response.status_code == 201
 
-        response = client.post("/pessoas/", json=pessoa_3)
-        assert response.status_code == 422
-
-        response = client.post("/pessoas/", json=pessoa_4)
-        assert response.status_code == 422
-
-    def test_should_return_400_when_fail_creating_pessoas(
-        self, db_session, pessoa_5, pessoa_6
+    async def test_should_return_422_when_fail_creating_pessoas(
+        self, client, db_session, redis, pessoa_1, pessoa_3, pessoa_4
     ):
-        response = client.post("/pessoas/", json=pessoa_5)
+        response = await client.post("/pessoas", json=pessoa_1)
+        assert response.status_code == 201
+        response = await client.post("/pessoas", json=pessoa_1)
+        assert response.status_code == 422
+
+        response = await client.post("/pessoas", json=pessoa_3)
+        assert response.status_code == 422
+
+        response = await client.post("/pessoas", json=pessoa_4)
+        assert response.status_code == 422
+
+    async def test_should_return_400_when_fail_creating_pessoas(
+        self, client, db_session, pessoa_5, pessoa_6
+    ):
+        response = await client.post("/pessoas", json=pessoa_5)
         assert response.status_code == 400
 
-        response = client.post("/pessoas/", json=pessoa_6)
+        response = await client.post("/pessoas", json=pessoa_6)
         assert response.status_code == 400
 
-    def test_should_return_not_found_when_pessoa_doesnt_exist(self, db_session):
-        response = client.get("/pessoas/1")
+    async def test_should_return_not_found_when_pessoa_doesnt_exist(
+        self, client, db_session, redis
+    ):
+        response = await client.get("/pessoas/1")
         assert response.status_code == 404
 
-    def test_should_return_pessoa_detail(self, db_session, pessoa_1, pessoa_2):
-        response = client.post("/pessoas/", json=pessoa_1)
+    async def test_should_return_pessoa_detail(
+        self, client, db_session, redis, pessoa_1, pessoa_2
+    ):
+        response = await client.post("/pessoas", json=pessoa_1)
         assert response.status_code == 201
         pessoa_created = PessoaSchema(**response.json())
 
-        response = client.get(f"/pessoas/{pessoa_created.id}")
+        response = await client.get(f"/pessoas/{pessoa_created.id}")
         assert response.status_code == 200
         pessoa_retrieved = PessoaSchema(**response.json())
 
@@ -124,26 +113,28 @@ class TestEndpoints:
         assert pessoa_created.apelido == pessoa_retrieved.apelido
         assert pessoa_created.nascimento == pessoa_retrieved.nascimento
 
-    def test_should_return_search(self, db_session, pessoa_1, pessoa_2):
-        response = client.post("/pessoas/", json=pessoa_1)
+    async def test_should_return_search(
+        self, client, db_session, redis, pessoa_1, pessoa_2
+    ):
+        response = await client.post("/pessoas", json=pessoa_1)
         assert response.status_code == 201
-        response = client.post("/pessoas/", json=pessoa_2)
+        response = await client.post("/pessoas", json=pessoa_2)
         assert response.status_code == 201
 
-        response = client.get(f"/pessoas/?t=node")
+        response = await client.get(f"/pessoas?t=node")
         assert response.status_code == 200
         pessoas = response.json()
         assert len(pessoas) == 1
 
-        response = client.get(f"/pessoas/?t=berto")
+        response = await client.get(f"/pessoas?t=berto")
         assert response.status_code == 200
         pessoas = response.json()
         assert len(pessoas) == 1
 
-        response = client.get(f"/pessoas/?t=Python")
+        response = await client.get(f"/pessoas?t=Python")
         assert response.status_code == 200
         pessoas = response.json()
         assert len(pessoas) == 0
 
-        response = client.get(f"/pessoas/?t=")
+        response = await client.get(f"/pessoas?t=")
         assert response.status_code == 400

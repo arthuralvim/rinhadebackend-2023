@@ -17,9 +17,10 @@ services:
       context: .
       dockerfile: Dockerfile
     hostname: api1
-    restart: on-failure
+    restart: always
     depends_on:
       - db
+      - cache
     expose:
       - '80'
     deploy:
@@ -43,6 +44,7 @@ services:
     image: nginx:latest
     volumes:
       - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    restart: always
     depends_on:
       - api1
       - api2
@@ -69,6 +71,7 @@ services:
     volumes:
       - ./db/init-testing-db.sh:/docker-entrypoint-initdb.d/init-testing-db.sh
       - ./db/improve_max_connections.sql:/docker-entrypoint-initdb.d/improve_max_connections.sql
+      - ./db/extensions.sql:/docker-entrypoint-initdb.d/extensions.sql
 
   cache:
     image: redis:7.2
@@ -79,6 +82,18 @@ services:
         limits:
           cpus: '0.1'
           memory: '0.5GB'
+
+  # pg admin
+
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: 'admin@gmail.com'
+      PGADMIN_DEFAULT_PASSWORD: 'admin'
+    ports:
+      - 5050:80
+    depends_on:
+      - db
 
   # gatling
 

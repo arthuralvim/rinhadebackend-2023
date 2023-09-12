@@ -1,9 +1,22 @@
 import pytest
-import os
+from httpx import AsyncClient
 
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
-from app.main import Base
+from sqlalchemy.ext.asyncio import async_sessionmaker
+from app.database import engine
+from app.main import app
+from app.models.base import Base
+from sqlalchemy import text
+from app.redis import get_redis
+
+
+@pytest.fixture(
+    scope="session",
+    params=[
+        pytest.param(("asyncio", {"use_uvloop": True}), id="asyncio+uvloop"),
+    ],
+)
+def anyio_backend(request):
+    return request.param
 
 
 @pytest.fixture
@@ -16,39 +29,46 @@ def pessoa_():
 
 
 @pytest.fixture()
-def sqlengine(request):
-    """
-    Creates a new engine connection with a Postgresql database.
-    """
+async def engine_():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+        await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "pg_trgm";'))
+        await conn.run_sync(Base.metadata.create_all)
 
-    engine = create_engine(os.environ.get("TEST_DATABASE_URL"), pool_recycle=3600)
-    Base.metadata.drop_all(engine)
-    Base.metadata.create_all(engine)
-
-    def teardown():
-        Base.metadata.drop_all(engine)
-
-    request.addfinalizer(teardown)
-    return engine
+    yield engine
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await engine.dispose()
 
 
 @pytest.fixture()
-def db_session(sqlengine, request):
-    """
-    Creates a new session/transaction using SQLAlchemy.
-    """
+async def db_session(engine_):
+    async with engine_.begin() as conn:
+        AsyncSessionFactory = async_sessionmaker(
+            engine,
+            autoflush=False,
+            expire_on_commit=False,
+        )
+        async with AsyncSessionFactory() as session:
+            # logger.debug(f"ASYNC Pool: {engine.pool.status()}")
+            yield session
 
-    connection = sqlengine.connect()
-    transaction = connection.begin()
+        await conn.rollback()
 
-    session_maker = sessionmaker(bind=connection)
-    session = session_maker()
 
-    def teardown():
-        session.close()
-        transaction.rollback()
-        connection.close()
+@pytest.fixture()
+async def redis():
+    r = await get_redis()
+    await r.flushdb()
+    yield r
 
-    request.addfinalizer(teardown)
 
-    return session
+@pytest.fixture(scope="session")
+async def client() -> AsyncClient:
+    async with AsyncClient(
+        app=app,
+        base_url="http://testserver/",
+        headers={"Content-Type": "application/json"},
+    ) as test_client:
+        app.state.redis = await get_redis()
+        yield test_client

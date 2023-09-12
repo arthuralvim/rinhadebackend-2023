@@ -1,13 +1,21 @@
 from fastapi import FastAPI, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
-from sqlalchemy import inspect
-
-from app.models import Base
-from app.config import engine
+from app.redis import get_redis
 from app.routers import router
+from contextlib import asynccontextmanager
 
-app = FastAPI()
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Load the redis connection
+    app.state.redis = await get_redis()
+    yield
+    # close redis connection and release the resources
+    app.state.redis.close()
+
+
+app = FastAPI(lifespan=lifespan)
 
 
 @app.exception_handler(RequestValidationError)
@@ -20,15 +28,6 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
 @app.get("/")
 async def home():
     return {"hello": "welcome home"}
-
-
-@router.get("/ready")
-async def ready():
-    try:
-        table_exists = inspect(engine).has_table("pessoas")
-    except Exception as e:
-        table_exists = False
-    return {"ready": table_exists}
 
 
 app.include_router(router, tags=["pessoas"])

@@ -14,4 +14,4 @@ else
     echo "There is no script $PRE_START_PATH"
 fi
 
-exec uvicorn app.main:app --host 0.0.0.0 --port 80 --workers 4
+exec uvicorn app.main:app --host 0.0.0.0 --port 80 --reload

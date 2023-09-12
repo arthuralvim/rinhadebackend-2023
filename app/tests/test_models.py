@@ -1,93 +1,128 @@
 import pytest
 
-from data import count_pessoas
-from data import get_pessoas
-from data import create_pessoa
-from data import get_pessoa_by_id
-from data import remove_pessoa
-from data import update_pessoa
-from data import search_pessoas
-from schemas import PessoaSchema
+from app.models import Person
+from app.schemas import PessoaSchema
+
+pytestmark = pytest.mark.anyio
 
 
-class TestPessoaCRUD:
-    def test_should_create_and_retrieve_pessoa(self, db_session, pessoa_):
-        pessoa = create_pessoa(db_session, PessoaSchema(**pessoa_))
-        pessoa_instance = get_pessoa_by_id(db_session, pessoa_id=pessoa.id)
-        assert pessoa.id == pessoa_instance.id
+@pytest.fixture
+def person(pessoa_):
+    pessoa = PessoaSchema(**pessoa_)
+    return Person(
+        nome=pessoa.nome,
+        apelido=pessoa.apelido,
+        nascimento=pessoa.nascimento,
+        stack=pessoa.stack,
+    )
 
-    def test_should_remove_pessoa(self, db_session, pessoa_):
-        pessoa = create_pessoa(db_session, PessoaSchema(**pessoa_))
-        remove_pessoa(db_session, pessoa_id=pessoa.id)
-        pessoa_instance = get_pessoa_by_id(db_session, pessoa_id=pessoa.id)
-        assert pessoa_instance is None
 
-    def test_should_update_pessoa(self, db_session, pessoa_):
-        pessoa_schema = PessoaSchema(**pessoa_)
-        pessoa = create_pessoa(db_session, pessoa_schema)
-        pessoa_updated = update_pessoa(
-            db_session, pessoa_id=pessoa.id, changes={"nome": "Bruce Wayne da Silva"}
+@pytest.fixture
+def persons(pessoa_):
+    pessoa = PessoaSchema(**pessoa_)
+    persons = []
+    for i in range(5):
+        persons.append(
+            Person(
+                nome=pessoa.nome,
+                apelido=pessoa.apelido + str(i),
+                nascimento=pessoa.nascimento,
+                stack=pessoa.stack,
+            )
         )
-        assert pessoa_updated.nome == "Bruce Wayne da Silva"
-        pessoa_updated = update_pessoa(
-            db_session, pessoa_id=pessoa.id, changes={"stack": ["c++", "python"]}
+    return persons
+
+
+class TestPersonCRUD:
+    async def test_should_create_and_retrieve_person(self, db_session, person):
+        person = await person.save(db_session)
+        person_instance = await Person.find_by_id(db_session, person_id=person.id)
+        assert person.id == person_instance.id
+
+    async def test_should_remove_person(self, db_session, person):
+        person = await person.save(db_session)
+        was_deleted = await Person.delete_by_id(db_session, person_id=person.id)
+        assert was_deleted
+        person_instance = await Person.find_by_id(
+            db_session, person_id=person.id, raise_http_error=False
         )
-        assert len(pessoa_updated.stack) == 2
+        assert person_instance is None
 
-    def test_should_remove_pessoa_that_doesnt_exist(self, db_session, pessoa_):
-        pessoa_removed = remove_pessoa(db_session, pessoa_id=10)
-        assert pessoa_removed is None
+        async def test_should_update_person(self, db_session, person):
+            person = await person.save(db_session)
+            person_update = await Person.update_by_id(
+                db_session, person_id=person.id, nome="Bruce Wayne da Silva"
+            )
+            assert person_update.nome == "Bruce Wayne da Silva"
+            person_update = await person.update_by_id(
+                db_session, person_id=person.id, stack=["c++", "python"]
+            )
+            assert len(person_update.stack) == 2
 
-    def test_should_update_pessoa_that_doesnt_exist(self, db_session, pessoa_):
-        pessoa_updated = update_pessoa(
-            db_session, pessoa_id=10, changes={"stack": ["c++", "python"]}
+    async def test_should_not_remove_person_that_doesnt_exist(self, db_session):
+        deleted = await Person.delete_by_id(
+            db_session, person_id=1, raise_http_error=False
         )
-        assert pessoa_updated is None
+        assert not deleted
 
-    def test_should_retrieve_pessoa_that_doesnt_exist(self, db_session, pessoa_):
-        pessoa_instance = get_pessoa_by_id(db_session, pessoa_id=10)
-        assert pessoa_instance is None
+        async def test_should_not_update_person_that_doesnt_exist(self, db_session):
+            person_update = await Person.update_by_id(
+                db_session, person_id=1, stack=["c++", "python"]
+            )
+            assert person_update is None
+
+    async def test_should_not_retrieve_person_that_doesnt_exist(self, db_session):
+        person = await Person.find_by_id(
+            db_session, person_id=1, raise_http_error=False
+        )
+        assert person is None
 
 
-class TestPessoaQuery:
-    def test_get_pessoas(self, db_session, pessoa_):
-        pessoas = get_pessoas(db_session)
-        assert len(pessoas) == 0
-        for i in range(5):
-            pessoa_.update({"apelido": "batman" + str(i)})
-            pessoa = create_pessoa(db_session, PessoaSchema(**pessoa_))
+class TestPersonQuery:
+    async def test_get_list_persons(self, db_session, persons):
+        persons_list = await Person.list(db_session)
+        assert len(persons_list) == 0
 
-        pessoas = get_pessoas(db_session)
-        assert len(pessoas) == 5
+        for person in persons:
+            await person.save(db_session)
 
-    def test_count_pessoas(self, db_session, pessoa_):
-        count = count_pessoas(db_session)
+        persons_list = await Person.list(db_session)
+        assert len(persons_list) == 5
+
+    async def test_count_persons(self, db_session, persons):
+        count = await Person.count(db_session)
         assert count == 0
-        for i in range(5):
-            pessoa_.update({"apelido": "batman" + str(i)})
-            pessoa = create_pessoa(db_session, PessoaSchema(**pessoa_))
-        count = count_pessoas(db_session)
+
+        for person in persons:
+            await person.save(db_session)
+
+        count = await Person.count(db_session)
         assert count == 5
 
 
-class TestPessoaSearch:
-    def test_search_pessoas_by_apelido(self, db_session, pessoa_):
-        for i in range(5):
-            pessoa_.update({"apelido": "batman" + str(i)})
-            pessoa = create_pessoa(db_session, PessoaSchema(**pessoa_))
-        pessoas = search_pessoas(db_session, search_term="batman")
-        assert len(pessoas) == 5
+class TestPersonSearch:
+    async def test_search_persons_by_nick(self, db_session, persons):
+        for person in persons:
+            await person.save(db_session)
 
-    def test_search_pessoas_by_nome(self, db_session, pessoa_):
-        for i in range(5):
-            pessoa_.update({"apelido": "batman" + str(i)})
-            pessoa = create_pessoa(db_session, PessoaSchema(**pessoa_))
-        pessoas = search_pessoas(db_session, search_term="bruce")
-        assert len(pessoas) == 5
+        persons_search_list = await Person.search_by_term(
+            db_session, search_term="batman"
+        )
+        assert len(persons_search_list) == 5
 
-    def test_search_pessoas_by_stack(self, db_session, pessoa_):
-        for i in range(5):
-            pessoa_.update({"apelido": "batman" + str(i), "stack": ["python", "c++"]})
-            pessoa = create_pessoa(db_session, PessoaSchema(**pessoa_))
-        pessoas = search_pessoas(db_session, search_term="++")
-        assert len(pessoas) == 5
+    async def test_search_persons_by_name(self, db_session, persons):
+        for person in persons:
+            await person.save(db_session)
+
+        persons_search_list = await Person.search_by_term(
+            db_session, search_term="bruce"
+        )
+        assert len(persons_search_list) == 5
+
+    async def test_search_persons_by_stack(self, db_session, persons):
+        for person in persons:
+            person.stack = ["python", "c++"]
+            await person.save(db_session)
+
+        persons_search_list = await Person.search_by_term(db_session, search_term="++")
+        assert len(persons_search_list) == 5

@@ -1,20 +1,14 @@
-# import sys
-# from pathlib import Path
+from asyncio import run
 
-# PACKAGE_PATH = str(Path(__file__).parent.parent)
-# sys.path.insert(0, PACKAGE_PATH)
-
-from app.config import engine
-from app.main import Base  # noqa: F401
+from app.database import engine
+from app.models.base import Base  # noqa: F401
 
 
-def init() -> None:
-    Base.metadata.create_all(bind=engine)
-
-
-def main() -> None:
-    init()
+async def create_database():
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.drop_all)
+        await connection.run_sync(Base.metadata.create_all)
 
 
 if __name__ == "__main__":
-    main()
+    run(create_database())
