@@ -18,8 +18,7 @@ class TestHomeReady:
         assert response.json() == {"ready": False}
 
     async def test_ready_when_ready(self, client, db_session):
-        extensions = await Person.list_extensions(db_session)
-        print(extensions)
+        await Person.list_extensions(db_session)
         response = await client.get("/ready")
         assert response.status_code == 200
         assert response.json() == {"ready": True}
