@@ -1,37 +1,28 @@
-FROM python:3.9-slim-buster
+FROM openjdk:17-slim-buster
 
-ENV \
-    PIP_DISABLE_PIP_VERSION_CHECK=on \
-    PIP_DEFAULT_TIMEOUT=100 \
-    GATLING_VERSION=3.9.5
+ENV GATLING_VERSION 3.10.5
+ENV GATLING_HOME /opt/gatling
 
 RUN \
     apt-get update && apt-get install -y \
     curl \
     unzip \
     tini \
+    python3 \
     && rm -rf /var/lib/apt/lists/*
 
-# INSTALL JAVA 8
-ENV JAVA_HOME="/usr/lib/jvm/java-1.8.0-openjdk-amd64" \
-    PATH=${JAVA_HOME}/bin:${PATH}
-COPY --from=java:8u111-jdk /usr/lib/jvm /usr/lib/jvm
-
-RUN  \
-    mkdir -p /test-runner/user-files/ \
-    mkdir -p /test-runner/data/
-
-WORKDIR /test-runner/
-
 RUN \
-    curl -fsSL "https://repo1.maven.org/maven2/io/gatling/highcharts/gatling-charts-highcharts-bundle/${GATLING_VERSION}/gatling-charts-highcharts-bundle-${GATLING_VERSION}-bundle.zip" > /test-runner/gatling.zip && \
-    unzip gatling.zip && \
-    mv gatling-charts-highcharts-bundle-3.9.5 gatling && \
-    rm gatling.zip
+    curl -fsSL "https://repo1.maven.org/maven2/io/gatling/highcharts/gatling-charts-highcharts-bundle/${GATLING_VERSION}/gatling-charts-highcharts-bundle-${GATLING_VERSION}-bundle.zip" > gatling.zip && \
+    unzip gatling.zip && rm gatling.zip && \
+    mv gatling-charts-highcharts-bundle-${GATLING_VERSION}/ ${GATLING_HOME}
 
-COPY docker-entrypoint.sh run.sh rinha.ascii /test-runner/
-COPY data /test-runner/data/
-COPY user-files /test-runner/user-files/
+COPY rinha.ascii ${GATLING_HOME}
+COPY scripts/docker-entrypoint.sh scripts/run.sh ${GATLING_HOME}/bin/
+ENV PATH="$PATH:$GATLING_HOME/bin"
+WORKDIR ${GATLING_HOME}
 
-ENTRYPOINT ["/usr/bin/tini", "--", "./docker-entrypoint.sh"]
-CMD ["./run.sh"]
+COPY rinhadebackend/resources ${GATLING_HOME}/user-files/resources
+COPY rinhadebackend/simulations ${GATLING_HOME}/user-files/simulations
+
+ENTRYPOINT ["/usr/bin/tini", "--", "docker-entrypoint.sh"]
+CMD ["run.sh"]

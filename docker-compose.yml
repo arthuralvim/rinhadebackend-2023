@@ -97,13 +97,20 @@ services:
 
   gatling:
     image: gatling
+    ulimits:
+      nproc: 65536
+      nofile:
+        soft: 65535
+        hard: 65535
     build:
       context: ./gatling
       dockerfile: Dockerfile
     container_name: gatling
+    environment:
+      GATLING_RESULT_PREFIX: 'fast_api_v1'
+      GATLING_DESCRIPTION: 'Stress test for Rinha de Backend'
     volumes:
-      - ./gatling/data:/test-runner/data
-      - ./gatling/user-files:/test-runner/user-files
+      - ./gatling/results:/opt/gatling/user-files/results
     depends_on:
       - api1
       - api2

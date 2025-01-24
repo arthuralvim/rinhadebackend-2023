@@ -18,7 +18,7 @@ The competition rules include:
 3. **Resource Constraints**: APIs must run on Docker Compose with a maximum of 1.5 CPUs and 3GB of RAM, distributed among components (e.g., API instances, database, load balancer).
 
 4. **Testing Environment**:
-   - APIs are stress-tested on AWS EC2 using [Gatling](https://gatling.io/).
+   - APIs are stress-tested on AWS EC2 using [Gatling (3.10.5) ](https://gatling.io/).
    - Two API instances are deployed behind an NGINX load balancer.
    - Scoring is based on the number of successful "person" entries in the database after the stress test.
 
@@ -57,9 +57,10 @@ $ docker compose build
 $ docker compose run --rm -e TESTING=True --rm api1 pytest
 ```
 
-#### Execute all containers
+#### Execute Stress Test
 
 ```sh
+$ sh gatling/scripts/generate-resources.sh
 $ docker compose up -d --build
 ```
 
