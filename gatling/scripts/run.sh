@@ -4,9 +4,6 @@ set -o errexit
 set -o nounset
 set -x
 
-GATLING_HOME=/opt/gatling
-GATLING_BIN=$GATLING_HOME/bin
-
 app_ready() {
 python3 << END
 import sys

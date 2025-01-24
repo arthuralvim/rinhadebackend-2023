@@ -1,7 +1,10 @@
 FROM openjdk:17-slim-buster
 
-ENV GATLING_VERSION 3.10.5
-ENV GATLING_HOME /opt/gatling
+ENV GATLING_VERSION=3.10.5
+ENV GATLING_HOME=/opt/gatling
+ENV GATLING_BIN=${GATLING_HOME}/bin/
+ENV GATLING_RESOURCES=${GATLING_HOME}/user-files/resources
+ENV GATLING_SIMULATIONS=${GATLING_HOME}/user-files/simulations
 
 RUN \
     apt-get update && apt-get install -y \
@@ -16,13 +19,13 @@ RUN \
     unzip gatling.zip && rm gatling.zip && \
     mv gatling-charts-highcharts-bundle-${GATLING_VERSION}/ ${GATLING_HOME}
 
+COPY scripts ${GATLING_BIN}
+COPY simulations ${GATLING_SIMULATIONS}
 COPY rinha.ascii ${GATLING_HOME}
-COPY scripts/docker-entrypoint.sh scripts/run.sh ${GATLING_HOME}/bin/
-ENV PATH="$PATH:$GATLING_HOME/bin"
-WORKDIR ${GATLING_HOME}
 
-COPY rinhadebackend/resources ${GATLING_HOME}/user-files/resources
-COPY rinhadebackend/simulations ${GATLING_HOME}/user-files/simulations
+WORKDIR ${GATLING_HOME}
+ENV PATH="$PATH:$GATLING_BIN"
+RUN generate-resources.sh
 
 ENTRYPOINT ["/usr/bin/tini", "--", "docker-entrypoint.sh"]
 CMD ["run.sh"]

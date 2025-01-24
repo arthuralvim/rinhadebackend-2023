@@ -60,7 +60,6 @@ $ docker compose run --rm -e TESTING=True --rm api1 pytest
 #### Execute Stress Test
 
 ```sh
-$ sh gatling/scripts/generate-resources.sh
 $ docker compose up -d --build
 ```
 

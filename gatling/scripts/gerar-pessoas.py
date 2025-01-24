@@ -5,6 +5,9 @@ import json
 import string
 import sys
 
+# arbitrary number
+random.seed(333)
+
 
 def get_stacks_validas():
     stacks = [

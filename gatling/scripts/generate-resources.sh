@@ -1,16 +1,13 @@
-#! /usr/bin/env sh
-
-RESOURCES=./gatling/rinhadebackend/resources
-SCRIPTS=./gatling/scripts
+#! /usr/bin/env bash
 
 function generate_scenarios() {
   echo "Test scenarios not found. Generating them now!"
-  python ${SCRIPTS}/gerar-pessoas.py > ${RESOURCES}/pessoas-payloads.tsv
-  python ${SCRIPTS}/gerar-termos-busca.py > ${RESOURCES}/termos-busca.tsv
+  python3 ${GATLING_BIN}/gerar-pessoas.py > ${GATLING_RESOURCES}/pessoas-payloads.tsv
+  python3 ${GATLING_BIN}/gerar-termos-busca.py > ${GATLING_RESOURCES}/termos-busca.tsv
   echo "Generation finished!"
 }
 
-if ! [[ -f ${RESOURCES}/pessoas-payloads.tsv ]] || ! [[ -f ${RESOURCES}/termos-busca.tsv ]]
+if ! [[ -f ${GATLING_RESOURCES}/pessoas-payloads.tsv ]] || ! [[ -f ${GATLING_RESOURCES}/termos-busca.tsv ]]
 then
   generate_scenarios
 else

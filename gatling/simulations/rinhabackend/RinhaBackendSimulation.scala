@@ -62,15 +62,15 @@ class RinhaBackendSimulation
 
       rampUsersPerSec(6).to(300).during(3.minutes) // lezzz go!!!
     ),
-    buscaPessoas.inject(
-      constantUsersPerSec(2).during(25.seconds), // warm up
+    // buscaPessoas.inject(
+    //   constantUsersPerSec(2).during(25.seconds), // warm up
 
-      rampUsersPerSec(6).to(50).during(3.minutes) // lezzz go!!!
-    ),
-    buscaInvalidaPessoas.inject(
-      constantUsersPerSec(2).during(25.seconds), // warm up
+    //   rampUsersPerSec(6).to(50).during(3.minutes) // lezzz go!!!
+    // ),
+    // buscaInvalidaPessoas.inject(
+    //   constantUsersPerSec(2).during(25.seconds), // warm up
 
-      rampUsersPerSec(6).to(20).during(3.minutes) // lezzz go!!!
-    )
+    //   rampUsersPerSec(6).to(20).during(3.minutes) // lezzz go!!!
+    // )
   ).protocols(httpProtocol)
 }
