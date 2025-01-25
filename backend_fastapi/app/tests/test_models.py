@@ -61,19 +61,19 @@ class TestPersonCRUD:
 
     async def test_should_not_remove_person_that_doesnt_exist(self, db_session):
         deleted = await Person.delete_by_id(
-            db_session, person_id=1, raise_http_error=False
+            db_session, person_id="abcdef", raise_http_error=False
         )
         assert not deleted
 
         async def test_should_not_update_person_that_doesnt_exist(self, db_session):
             person_update = await Person.update_by_id(
-                db_session, person_id=1, stack=["c++", "python"]
+                db_session, person_id="abcdef", stack=["c++", "python"]
             )
             assert person_update is None
 
     async def test_should_not_retrieve_person_that_doesnt_exist(self, db_session):
         person = await Person.find_by_id(
-            db_session, person_id=1, raise_http_error=False
+            db_session, person_id="abcdef", raise_http_error=False
         )
         assert person is None
 

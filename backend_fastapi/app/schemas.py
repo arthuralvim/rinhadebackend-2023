@@ -7,7 +7,7 @@ from pydantic_core import PydanticCustomError
 class PessoaSchema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    id: Optional[int] = None
+    id: Optional[str] = None
     nome: Optional[constr(max_length=100)] = None
     apelido: Optional[constr(max_length=32)] = None
     nascimento: constr(max_length=10)

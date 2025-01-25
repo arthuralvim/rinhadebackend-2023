@@ -1,0 +1,17 @@
+
+services:
+  api1: &api
+    image: rinha_api
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    hostname: api1
+    restart: always
+    volumes:
+      - ./app/:/src/app/
+    expose:
+      - '80'
+
+  api2:
+    <<: *api
+    hostname: api2

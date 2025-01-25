@@ -71,7 +71,7 @@ async def create_person(
         ex=global_settings.redis_default_expiration,
     )
 
-    headers = {"Location": "http://nginx:9999/pessoas/{id}".format(id=person.id)}
+    headers = {"Location": "http://proxy:9999/pessoas/{id}".format(id=person.id)}
     return JSONResponse(
         content=jsonable_encoder(person),
         status_code=status.HTTP_201_CREATED,
@@ -80,34 +80,38 @@ async def create_person(
 
 
 @router.get(
-    "/pessoas/{id}", status_code=status.HTTP_200_OK, response_model=PessoaSchema
+    "/pessoas/{person_id}", status_code=status.HTTP_200_OK, response_model=PessoaSchema
 )
 async def get_person_by_id(
-    request: Request, id: int, db_session: Session = Depends(get_db)
+    request: Request, person_id: str,
 ):
-    person_redis = await request.app.state.redis.get(f"person_{id}")
+    person_redis = await request.app.state.redis.get(f"person_{person_id}")
     if person_redis:
         person = json.loads(person_redis)
         return person
-    return await Person.find_by_id(db_session, person_id=id)
+
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail={"Not found": f"There is no record for id: {person_id}"},
+    )
 
 
 @router.put(
-    "/pessoas/{id}", status_code=status.HTTP_200_OK, response_model=PessoaSchema
+    "/pessoas/{person_id}", status_code=status.HTTP_200_OK, response_model=PessoaSchema
 )
 async def update_person_by_id(
     payload: PessoaSchema,
-    id: int,
+    person_id: str,
     db_session: Session = Depends(get_db),
 ):
-    person = await Person.find_by_id(db_session, person_id=id)
+    person = await Person.find_by_id(db_session, person_id=person_id)
     await person.update(db_session, **payload.model_dump())
     return person
 
 
-@router.delete("/pessoas/{id}", status_code=status.HTTP_200_OK, response_model=None)
-async def delete_person_by_id(id: int, db_session: Session = Depends(get_db)):
-    person = await Person.find_by_id(db_session, person_id=id)
+@router.delete("/pessoas/{person_id}", status_code=status.HTTP_200_OK, response_model=None)
+async def delete_person_by_id(person_id: str, db_session: Session = Depends(get_db)):
+    person = await Person.find_by_id(db_session, person_id=person_id)
     was_deleted = await person.delete(db_session)
     return {"deleted": was_deleted, "message": "Person deleted!"}
 

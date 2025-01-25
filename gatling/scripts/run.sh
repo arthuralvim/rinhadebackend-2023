@@ -20,7 +20,7 @@ def check_ready(url):
         print(e.status, e.reason)
 
 try:
-    content, code = check_ready("http://nginx:9999/ready")
+    content, code = check_ready("http://proxy:9999/ready")
     if content is not None and code == 200 and not content.get('ready', False):
         sys.exit(-1)
 except Exception:
@@ -51,7 +51,7 @@ def get_url(url):
         print(e.status, e.reason)
 
 try:
-    content, code = get_url("http://nginx:9999/contagem-pessoas")
+    content, code = get_url("http://proxy:9999/contagem-pessoas")
     if content is not None and code == 200 and content != 0:
         sys.exit(-1)
 except Exception:
@@ -75,5 +75,5 @@ sh ${GATLING_BIN}/gatling.sh \
 
 sleep 3
 
-COUNT=$(curl -fsSL "http://nginx:9999/contagem-pessoas")
+COUNT=$(curl -fsSL "http://proxy:9999/contagem-pessoas")
 echo "${COUNT}"

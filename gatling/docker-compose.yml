@@ -1,0 +1,14 @@
+services:
+  gatling:
+    image: gatling
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: gatling
+    ulimits:
+      nproc: 65536
+      nofile:
+        soft: 65535
+        hard: 65535
+    volumes:
+      - ./results:/opt/gatling/user-files/results

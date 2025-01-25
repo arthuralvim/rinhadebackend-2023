@@ -10,7 +10,7 @@ class RinhaBackendSimulation
   extends Simulation {
 
   val httpProtocol = http
-    .baseUrl("http://nginx:9999")
+    .baseUrl("http://proxy:9999")
     .userAgentHeader("Agente do Caos - 2023")
 
   val criacaoEConsultaPessoas = scenario("Criação E Talvez Consulta de Pessoas")
@@ -59,18 +59,15 @@ class RinhaBackendSimulation
     criacaoEConsultaPessoas.inject(
       constantUsersPerSec(2).during(10.seconds), // warm up
       constantUsersPerSec(5).during(15.seconds).randomized, // are you ready?
-
       rampUsersPerSec(6).to(300).during(3.minutes) // lezzz go!!!
     ),
-    // buscaPessoas.inject(
-    //   constantUsersPerSec(2).during(25.seconds), // warm up
-
-    //   rampUsersPerSec(6).to(50).during(3.minutes) // lezzz go!!!
-    // ),
-    // buscaInvalidaPessoas.inject(
-    //   constantUsersPerSec(2).during(25.seconds), // warm up
-
-    //   rampUsersPerSec(6).to(20).during(3.minutes) // lezzz go!!!
-    // )
+    buscaPessoas.inject(
+      constantUsersPerSec(2).during(25.seconds), // warm up
+      rampUsersPerSec(6).to(50).during(3.minutes) // lezzz go!!!
+    ),
+    buscaInvalidaPessoas.inject(
+      constantUsersPerSec(2).during(25.seconds), // warm up
+      rampUsersPerSec(6).to(20).during(3.minutes) // lezzz go!!!
+    )
   ).protocols(httpProtocol)
 }

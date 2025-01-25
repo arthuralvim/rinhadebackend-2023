@@ -66,5 +66,5 @@ $ docker compose up -d --build
 #### Check Gatling output
 
 ```sh
-$ docker compose logs -t gatling
+$ docker compose logs -f gatling
 ```

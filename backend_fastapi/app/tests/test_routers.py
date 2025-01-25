@@ -94,7 +94,7 @@ class TestEndpoints:
     async def test_should_return_not_found_when_pessoa_doesnt_exist(
         self, client, db_session, redis
     ):
-        response = await client.get("/pessoas/1")
+        response = await client.get("/pessoas/abcdef")
         assert response.status_code == 404
 
     async def test_should_return_pessoa_detail(

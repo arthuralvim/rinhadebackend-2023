@@ -1,0 +1,11 @@
+services:
+  database:
+    image: postgres:latest
+    command: postgres -c config_file=/docker-entrypoint-initdb.d/postgresql.conf
+    restart: always
+    ports:
+      - '5432:5432'
+    volumes:
+      - ./init-testing-db.sh:/docker-entrypoint-initdb.d/init-testing-db.sh
+      - ./extensions.sql:/docker-entrypoint-initdb.d/extensions.sql
+      - ./postgresql.conf:/docker-entrypoint-initdb.d/postgresql.conf

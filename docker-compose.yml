@@ -1,178 +1,90 @@
-volumes:
-  app-web: {}
-  db-data: {}
-  prometheus-data: {}
-  grafana-data: {}
 
 networks:
-  monitoring:
+  default:
     driver: bridge
 
+x-postgres-environment: &postgres-environment
+  POSTGRES_PASSWORD: super-password
+  POSTGRES_USER: rinha_user
+  POSTGRES_DB: rinha_db
+
+x-app-environment: &app-environment
+  DATABASE_URL: "postgresql+asyncpg://rinha_user:super-password@database:5432/rinha_db"
+  REDIS_URL: "redis://cache:6379/2"
+
 services:
-  api1: &api
-    image: rinha_api
-    build:
-      context: .
-      dockerfile: Dockerfile
-    hostname: api1
-    restart: always
+  gatling:
+    extends:
+        file: ./gatling/docker-compose.yml
+        service: gatling
+    environment:
+      GATLING_RESULT_PREFIX: 'backend_fastapi'
+      GATLING_DESCRIPTION: "StressTest-Rinha-de-Backend"
+
+  api1:
+    extends:
+      file: ./backend_fastapi/docker-compose.yml
+      service: api1
     depends_on:
-      - db
+      - database
       - cache
-    expose:
-      - '80'
+    environment:
+      <<: [*app-environment, *postgres-environment]
+      RUN_INITIAL_DATA: "False"
+      TEST_DATABASE_URL: "postgresql+asyncpg://rinha_user:super-password@database:5432/test_rinha_db"
     deploy:
       resources:
         limits:
-          cpus: '0.25'
-          memory: '0.4GB'
-    env_file:
-      - default.env
-    environment:
-      RUN_INITIAL_DATA: 'False'
-    volumes:
-      - ./app/:/src/app/
+          cpus: '0.20'
+          memory: '0.20GB'
 
   api2:
-    <<: *api
-    environment:
-      RUN_INITIAL_DATA: 'True'
-
-  nginx:
-    image: nginx:latest
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
-    restart: always
+    extends:
+      file: ./backend_fastapi/docker-compose.yml
+      service: api2
     depends_on:
-      - api1
-      - api2
-    ports:
-      - '9999:9999'
+      - database
+      - cache
+    environment:
+      RUN_INITIAL_DATA: "True"
+      <<: [*app-environment, *postgres-environment]
     deploy:
       resources:
         limits:
-          cpus: '0.25'
-          memory: '0.4GB'
-
-  db:
-    image: postgres:latest
-    ports:
-      - '5432:5432'
-    restart: always
-    deploy:
-      resources:
-        limits:
-          cpus: '0.75'
-          memory: '1.5GB'
-    env_file:
-      - default.env
-    volumes:
-      - ./db/init-testing-db.sh:/docker-entrypoint-initdb.d/init-testing-db.sh
-      - ./db/improve_max_connections.sql:/docker-entrypoint-initdb.d/improve_max_connections.sql
-      - ./db/extensions.sql:/docker-entrypoint-initdb.d/extensions.sql
+          cpus: '0.20'
+          memory: '0.20GB'
 
   cache:
-    image: redis:7.2
-    ports:
-      - '6379:6379'
+    extends:
+      file: ./cache/docker-compose.yml
+      service: cache
     deploy:
       resources:
         limits:
-          cpus: '0.1'
-          memory: '0.5GB'
+          cpus: '0.15'
+          memory: '0.3GB'
 
-  # pg admin
-
-  pgadmin:
-    image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: 'admin@gmail.com'
-      PGADMIN_DEFAULT_PASSWORD: 'admin'
-    ports:
-      - 5050:80
-    depends_on:
-      - db
-
-  # gatling
-
-  gatling:
-    image: gatling
-    ulimits:
-      nproc: 65536
-      nofile:
-        soft: 65535
-        hard: 65535
-    build:
-      context: ./gatling
-      dockerfile: Dockerfile
-    container_name: gatling
-    environment:
-      GATLING_RESULT_PREFIX: 'fast_api_v1'
-      GATLING_DESCRIPTION: 'Stress test for Rinha de Backend'
-    volumes:
-      - ./gatling/results:/opt/gatling/user-files/results
+  proxy:
+    extends:
+      file: ./proxy/docker-compose.yml
+      service: proxy
     depends_on:
       - api1
       - api2
-      - db
-      - cache
-      - nginx
+    deploy:
+      resources:
+        limits:
+          cpus: '0.20'
+          memory: '0.3GB'
 
-  # observability
-
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.47.1
-    container_name: cadvisor
-    privileged: true
-    devices:
-      - /dev/kmsg:/dev/kmsg
-    volumes:
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /etc/machine-id:/etc/machine-id:ro
-      - /var/lib/dbus/machine-id:/var/lib/dbus/machine-id:ro
-    restart: unless-stopped
-    expose:
-      - 8080
-    ports:
-      - '8080:8080'
-    networks:
-      - monitoring
-    labels:
-      org.label-schema.group: 'monitoring'
-
-  prometheus:
-    image: prom/prometheus:v2.47.0
-    container_name: prometheus
-    volumes:
-      - prometheus-data:/prometheus
-      - ./observability/prometheus/:/etc/prometheus/
-    command:
-      - '--config.file=/etc/prometheus/prometheus.yml'
-      - '--storage.tsdb.path=/prometheus'
-      - '--web.console.libraries=/etc/prometheus/console_libraries'
-      - '--web.console.templates=/etc/prometheus/consoles'
-      - '--storage.tsdb.retention=200h'
-    expose:
-      - 9090
-    ports:
-      - '9090:9090'
-    networks:
-      - monitoring
-
-  grafana:
-    image: grafana/grafana:9.1.7
-    container_name: grafana
-    volumes:
-      - grafana-data:/var/lib/grafana:rw
-      - ./observability/grafana/dashboard.yml:/etc/grafana/provisioning/dashboards/main.yaml
-      - ./observability/grafana/datasources:/etc/grafana/provisioning/datasources
-      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards
-
-    expose:
-      - 3000
-    ports:
-      - '3000:3000'
-    networks:
-      - monitoring
+  database:
+    extends:
+      file: ./database/docker-compose.yml
+      service: database
+    environment:
+      <<: *postgres-environment
+    deploy:
+      resources:
+        limits:
+          cpus: '0.70'
+          memory: '2.0GB'

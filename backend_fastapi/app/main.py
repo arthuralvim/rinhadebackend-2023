@@ -12,7 +12,7 @@ async def lifespan(app: FastAPI):
     app.state.redis = await get_redis()
     yield
     # close redis connection and release the resources
-    app.state.redis.close()
+    await app.state.redis.close()
 
 
 app = FastAPI(lifespan=lifespan)

@@ -12,10 +12,9 @@ global_settings = settings.get_settings()
 
 engine = create_async_engine(
     global_settings.asyncpg_url.unicode_string(),
-    pool_size=int(os.getenv("DB_POOL", 500)),
-    max_overflow=int(os.getenv("DB_POOL_OVERFLOW", 500)),
-    future=True,
-    echo=True if os.environ.get("SQLALCHEMY_ECHO", False) == "True" else False,
+    pool_size=int(os.getenv("DB_POOL", 300)),
+    max_overflow=int(os.getenv("DB_POOL_OVERFLOW", 50)),
+    future=True, echo=False,
 )
 
 # expire_on_commit=False will prevent attributes from being expired

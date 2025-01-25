@@ -6,10 +6,15 @@ from sqlalchemy import func as F
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.types import ARRAY
 from sqlalchemy import text
+import uuid
+
+
+def generate_uuid():
+    return str(uuid.uuid4())
 
 
 class Person(Base):
-    id = Column(Integer, primary_key=True, autoincrement=True)
+    id = Column(String, primary_key=True, default=generate_uuid)
     nome = Column(String(100), nullable=False)
     apelido = Column(String(32), unique=True, nullable=False)
     nascimento = Column(String(10), nullable=False)
@@ -45,7 +50,7 @@ class Person(Base):
 
     @classmethod
     async def find_by_id(
-        cls, db_session: AsyncSession, person_id: int, raise_http_error=True
+        cls, db_session: AsyncSession, person_id: str, raise_http_error=True
     ):
         """
         :param db_session:
@@ -65,7 +70,7 @@ class Person(Base):
 
     @classmethod
     async def delete_by_id(
-        cls, db_session: AsyncSession, person_id: int, raise_http_error=True
+        cls, db_session: AsyncSession, person_id: str, raise_http_error=True
     ):
         """
         :param db_session:
@@ -84,7 +89,7 @@ class Person(Base):
 
     @classmethod
     async def update_by_id(
-        cls, db_session: AsyncSession, person_id: int, raise_http_error=True, **kwargs
+        cls, db_session: AsyncSession, person_id: str, raise_http_error=True, **kwargs
     ):
         """
         :param db_session:

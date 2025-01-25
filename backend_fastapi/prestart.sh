@@ -12,7 +12,7 @@ try:
         dbname="${POSTGRES_DB}",
         user="${POSTGRES_USER}",
         password="${POSTGRES_PASSWORD}",
-        host="db",
+        host="database",
         port="5432",
     )
 except psycopg2.OperationalError:

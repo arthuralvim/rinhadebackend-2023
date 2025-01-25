@@ -1,7 +1,6 @@
 import pytest
 
 from app.models import Person
-from app.schemas import PessoaSchema
 
 pytestmark = pytest.mark.anyio
 
